@@ -12,13 +12,14 @@
 
 ## Compute the camera calibration matrix and distortion coefficients given a set of chessboard images
 
-![](images/calibration.png)
+![](images/calibration.png)<br>
 *Calibration Images*
 
 
 ## Apply a distortion correction to raw images
-![](images/undistort_sample.png)
+![](images/undistort_sample.png)<br>
 *Sample Image Undistorted*
+
 
 ## Use color transforms, gradients, etc., to create a thresholded binary image.
 

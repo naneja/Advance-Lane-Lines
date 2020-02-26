@@ -38,7 +38,7 @@
 *Lane Detection using Sliding Window*
 
 ![](images/sample_lane.png)<br>
-*Sample Lane with Sliding Window*
+*Sample Lane without Sliding Window*
 
 ![](images/lane_images.png)<br>
 * Finding Lanes in Sample Images 

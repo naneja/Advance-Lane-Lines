@@ -11,11 +11,14 @@
 
 
 ## Compute the camera calibration matrix and distortion coefficients given a set of chessboard images
-* https://github.com/naneja/advance-lane-lines/blob/master/images/calibration.png
-![alt text](images/calibration.png "Calibration Images")
+
+![](images/calibration.png)
+*Calibration Images*
 
 
 ## Apply a distortion correction to raw images
+![](images/undistort_sample.png)
+*Sample Image Undistorted*
 
 ## Use color transforms, gradients, etc., to create a thresholded binary image.
 
@@ -25,3 +28,6 @@
 ## Detect lane pixels and fit to find the lane boundary
 
 ## Measure Curvature
+
+# Input and Final Output
+

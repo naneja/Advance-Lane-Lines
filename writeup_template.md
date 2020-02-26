@@ -40,7 +40,7 @@
 ![](images/sample_lane.png)<br>
 *Sample Lane with Sliding Window*
 
-![](image/lane_images.png)<br>
+![](images/lane_images.png)<br>
 * Finding Lanes in Sample Images 
 
 
@@ -54,9 +54,8 @@
 
 # Input and Final Output
 
-![](data/project_video.mp4)<br>
-*Input*
+Input: [Project Video](data/project_video.mp4)
+
+Output: [Project Video Marked](data/project_video_marked.mp4)
 
 
-![](data/project_video_marked.mp4)<br>
-*Output*

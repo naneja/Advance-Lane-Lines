@@ -45,7 +45,7 @@ ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_s
 >  Test undistortion on an image  
 undist = cv2.undistort(image, mtx, dist, None, mtx)  
 
-![](images/undistort_sample.png)
+![](images/undistort_sample.png)  
 *Sample Undistorted Image*
 
 
@@ -71,7 +71,7 @@ M = cv2.getPerspectiveTransform(src, dst)
 warped = cv2.warpPerspective(undist, M, image_size)  
 
 
-![](images/undistort_warp_sample.png)
+![](images/undistort_warp_sample.png)  
 *Sample Undistorted and Warped Image*
 
 

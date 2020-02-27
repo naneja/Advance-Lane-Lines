@@ -132,14 +132,41 @@ combined_binary[opt] = 1
 
 
 
-## Apply a perspective transform to rectify binary image ("birds-eye view").
-![](images/sample_corners.png)<br>
-*Object Points Marked on Sample Image with Red Star for Bird-Eye View*
+## Apply a perspective transform to rectify binary image ("birds-eye view").  
+* Process to rectify the binary image to get birds-eye view is below:  
 
-![](images/bird_eye_images.png)<br>
-*Threshold Binary Images from Bird-Eye View*
+> Get Binary Thresholded Image  
+combined_binary[opt] = 1 # continue from previous step  
+w, h = binary_img.shape[1], binary_img.shape[0]  
+image_size = (w, h)  
+
+> get source points - grabbing ROI as marked in the below image  
+top_left = [595, 450]  
+top_right = [685, 450]  
+bottom_right = [1210, h]  
+bottom_left = [200, h]  
+src = np.float32([top_left, top_right, bottom_right, bottom_left])  
+
+![](images/sample_corners.png)  
+*Object Points Marked on Sample Image with Red Star for Bird-Eye View*  
 
 
+> get destination points  
+offset = 300  
+top_left = [offset, 0]  
+top_right = [w - offset, 0]  
+bottom_right = [w - offset, h]  
+bottom_left = [offset, h]  
+dst = np.float32([top_left, top_right, bottom_right, bottom_left])  
+
+> get perspective transform matrix and warped image as shown below  
+M = cv2.getPerspectiveTransform(src, dst)  
+warped = cv2.warpPerspective(binary_img, M, image_size, flags=cv2.INTER_LINEAR)  
+
+![](images/bird_eye_images.png)  
+*Threshold Binary Warped Images by applying prespective transform M in Bird-Eye View*  
+
+---
 ## Detect lane pixels and fit to find the lane boundary
 ![](images/sliding_sample.png)<br>
 *Lane Detection using Sliding Window*

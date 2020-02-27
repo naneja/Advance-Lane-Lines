@@ -76,8 +76,15 @@ warped = cv2.warpPerspective(undist, M, image_size)
 
 
 ## Apply a distortion correction to raw images
-![](images/undistort_sample.png)<br>
-*Sample Image Undistorted*
+
+> Process to Undistort Images  
+dist_pickle = pickle.load(open(dist_fname, 'rb'))  # Load Calibration Params    
+mtx = dist_pickle['mtx']  
+dist = dist_pickle['dist']  
+image = cv2.undistort(image, mtx, dist, None, mtx) # Undistort  Images  
+
+![](images/undistort_images.png)  
+*Images Undistorted*  
 
 
 ## Use color transforms, gradients, etc., to create a thresholded binary image.

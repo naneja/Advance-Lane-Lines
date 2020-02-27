@@ -289,32 +289,27 @@ right_fit = np.array([1.80581319e-04, -5.51462989e-01, 1.25626613e+03])
 > Search the Activated around the current Poly  
 margin = 50  
 
-\# Grab Activate Pixels    
+> Grab Activate Pixels    
 nonzero = binary_warped.nonzero()    
 nonzeroy = np.array(nonzero[0])  
 nonzerox = np.array(nonzero[1])  
-
-xvals = left_fit[0] * nonzeroy**2 + left_fit[1] * nonzeroy + left_fit[2]    
+xvals = left_fit[0] * nonzeroy\**2 + left_fit[1] * nonzeroy + left_fit[2]    
 left_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)    
-
 xvals = right_fit[0] * nonzeroy**2 + right_fit[1] * nonzeroy + right_fit[2]  
 right_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)    
-
-left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy\**2) + left_fit[1]*nonzeroy +left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + 
+left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy\**2) + left_fit[1]*nonzeroy +left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy\**2) + 
                 left_fit[1]*nonzeroy + left_fit[2] + margin)))  
-                
-right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy\**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + 
+right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy\**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy\**2) + 
                 right_fit[1]*nonzeroy + right_fit[2] + margin)))  
 
 
-\# extract left and right line pixel positions  
+> extract left and right line pixel positions  
 leftx = nonzerox[left_lane_inds]  
 lefty = nonzeroy[left_lane_inds]  
-
 rightx = nonzerox[right_lane_inds]  
 righty = nonzeroy[right_lane_inds]  
 
-\# Fit new polynomials  
+> Fit new polynomials  
 if len(leftx) != 0 and len(rightx) != 0:  
     left_fit = np.polyfit(lefty, leftx, 2)  
     right_fit = np.polyfit(righty, rightx, 2)  
@@ -339,17 +334,13 @@ ym_per_pix = 30/720 # meters per pixel in y dimension
 xm_per_pix = 3.7/700 # meters per pixel in x dimension  
 left_fitx = [lx * xm_per_pix for lx in left_fitx]  
 right_fitx = [rx * xm_per_pix for rx in right_fitx]  
-
 ploty = [py * ym_per_pix for py in ploty]  
 left_fit = np.polyfit(ploty, left_fitx, 2)  
 right_fit = np.polyfit(ploty, right_fitx, 2)  
-
 y_eval = np.max(ploty)  
 y_eval = y_eval * ym_per_pix  
-
 A, B, C = left_fit[0], left_fit[1], left_fit[2]  
 left_curverad = (((1 + (2 * A * y_eval + B)**2))**1.5) / np.absolute(2*A)    
-
 A, B, C = right_fit[0], right_fit[1], right_fit[2]  
 right_curverad = (((1 + (2 * A * y_eval + B)**2))**1.5) / np.absolute(2*A)  
 
@@ -359,7 +350,6 @@ right_curverad = (((1 + (2 * A * y_eval + B)**2))**1.5) / np.absolute(2*A)
 left_fitx = left_fitx[-20:]  
 right_fitx = right_fitx[-20:]  
 ploty = ploty[-20:]  
-
 diff = [l + (r - l)/2 for r, l in zip(right_fitx, left_fitx)]  
 x = np.mean(diff)  
 y = np.mean(ploty)  

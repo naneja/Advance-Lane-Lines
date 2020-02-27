@@ -7,7 +7,7 @@
 * Detect lane pixels and fit to find the lane boundary
 * Measure Curvature
 
-
+---
 ## Compute the camera calibration matrix and distortion coefficients given a set of chessboard images
 Camera introduces two types of distortation:
 * Radial Distortion
@@ -72,9 +72,9 @@ warped = cv2.warpPerspective(undist, M, image_size)
 
 
 ![](images/undistort_warp_sample.png)  
-*Sample Undistorted and Warped Image*
+*Sample Undistorted and Warped Image*  
 
-
+---
 ## Apply a distortion correction to raw images
 
 > Process to Undistort Images  
@@ -87,9 +87,50 @@ image = cv2.undistort(image, mtx, dist, None, mtx) # Undistort  Images
 *Images Undistorted*  
 
 
+---
 ## Use color transforms, gradients, etc., to create a thresholded binary image.
-![](images/threshold_binary_images.png)<br>
-*Threshold Binary Images*
+* Process steps to create thresholded binary images are below
+
+> Undistort Image  
+image = cv2.undistort(image, mtx, dist, None, mtx)   
+
+> Threshold R color channel to get R Binary with (200, 255)  
+R = image[:,:,0]  
+R_binary = np.zeros_like(R)  
+R_binary[(R >= R_thresh[0]) & (R <= R_thresh[1])] = 1  
+
+> Threshold color channel with (170, 255) to get s_binary  
+hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)  
+s_channel = hls[:, :, 2]  
+s_binary = np.zeros_like(s_channel)  
+s_binary[(s_channel >= s_thresh[0]) & (s_channel <= s_thresh[1])] = 1  
+
+> Threshold x gradient with (20, 100) to get sx_binary  
+l_channel = hls[:, :, 1]  
+\# Apply Sobel x  
+sobelx = cv2.Sobel(l_channel, cv2.CV_64F, 1, 0)  
+sobelx_abs = np.absolute(sobelx)  
+scale_factor = np.max(sobelx_abs) / 255  
+scaled_sobel = np.uint8(sobelx_abs/scale_factor)  
+\# Threshold x gradient  
+sx_binary = np.zeros_like(scaled_sobel)  
+sx_binary[(scaled_sobel >= sx_thresh[0]) & (scaled_sobel <= sx_thresh[1])] = 1   
+
+
+> Activate binary image when any two activated from R_binary, s_binary, or sx_binary  
+combined_binary = np.zeros_like(sx_binary)  
+opt1 = (s_binary == 1) & (sx_binary == 1)  
+opt2 = (sx_binary == 1) & (R_binary == 1)    
+opt3 = (s_binary == 1) & (R_binary == 1)  
+opt = opt1 | opt2 | opt3  
+combined_binary[opt] = 1   
+
+
+![](images/threshold_binary_images.png)  
+*Threshold Binary Images*  
+
+
+
 
 ## Apply a perspective transform to rectify binary image ("birds-eye view").
 ![](images/sample_corners.png)<br>

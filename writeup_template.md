@@ -196,11 +196,11 @@ nonzero = binary_warped.nonzero()
 nonzeroy = np.array(nonzero[0])  
 nonzerox = np.array(nonzero[1])  
 
-\# Current Positions to be updated  
+> Current Positions to be updated  
 leftx_current = leftx_base  
 rightx_current = rightx_base  
  
-\# left and right lane pixel indices  
+> left and right lane pixel indices  
 left_lane_inds = []  
 right_lane_inds = []  
  
@@ -216,7 +216,7 @@ for window in range(nwindows):
     win_xright_low = rightx_current - margin  
     win_xright_high = rightx_current + margin  
 
-     # Draw the windows on the visualization image  
+    # Draw the windows on the visualization image  
      pt1 = (win_xleft_low, win_y_low)  
      pt2 = (win_xleft_high, win_y_high)  
      color = (0, 255, 0)  
@@ -227,7 +227,6 @@ for window in range(nwindows):
      pt2 = (win_xright_high, win_y_high)  
      cv2.rectangle(out_img, pt1, pt2, color, thickness)  
 
-     
      # Identify the nonzero pixels in x and y within the window  
      left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high))  
      good_left_inds = left_inds.nonzero()[0]  
@@ -248,8 +247,7 @@ for window in range(nwindows):
          inds = nonzerox[good_right_inds]  
          rightx_current = np.int(np.mean(inds))  
     
-     # Concatenate the arrays of indices (previously was a list of lists of pixels)  
-
+\# Concatenate the arrays of indices (previously was a list of lists of pixels)  
 left_lane_inds = np.concatenate(left_lane_inds)  
 right_lane_inds = np.concatenate(right_lane_inds)  
 
@@ -258,7 +256,6 @@ leftx = nonzerox[left_lane_inds]
 lefty = nonzeroy[left_lane_inds]  
 rightx = nonzerox[right_lane_inds]  
 righty = nonzeroy[right_lane_inds]  
-
 
 > Fit Polynomial for detected left and right lane points  
 \# Fit a second order polynomial to each using `np.polyfit`  
@@ -281,13 +278,55 @@ out_img[righty, rightx] = [0, 0, 255]
 plt.plot(left_fitx, ploty, color='yellow')  
 plt.plot(right_fitx, ploty, color='yellow')  
 
-
-
 ![](images/sliding_sample.png)<br>
 *Lane Detection using Sliding Window*
 
-![](images/sample_lane.png)<br>
-*Sample Lane without Sliding Window*
+> Skip the Sliding Window    
+Start with Polynomial Coefficients from the last image  
+left_fit = np.array([2.85842284e-04, -5.92619909e-01, 6.14734010e+02])  
+right_fit = np.array([1.80581319e-04, -5.51462989e-01, 1.25626613e+03])  
+
+> Search the Activated around the current Poly
+margin = 50
+
+\# Grab Activate Pixels  
+nonzero = binary_warped.nonzero()  
+nonzeroy = np.array(nonzero[0])  
+nonzerox = np.array(nonzero[1])  
+
+xvals = left_fit[0] * nonzeroy**2 + left_fit[1] * nonzeroy + left_fit[2]  
+left_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)  
+
+xvals = right_fit[0] * nonzeroy**2 + right_fit[1] * nonzeroy + right_fit[2]  
+right_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)  
+
+left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy\**2) + left_fit[1]*nonzeroy +left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + 
+                left_fit[1]*nonzeroy + left_fit[2] + margin)))
+                
+right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy\**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + 
+                right_fit[1]*nonzeroy + right_fit[2] + margin)))
+
+
+\# extract left and right line pixel positions
+leftx = nonzerox[left_lane_inds]
+lefty = nonzeroy[left_lane_inds]
+
+rightx = nonzerox[right_lane_inds]
+righty = nonzeroy[right_lane_inds]
+
+\# Fit new polynomials 
+if len(leftx) != 0 and len(rightx) != 0:
+    left_fit = np.polyfit(lefty, leftx, 2)
+    right_fit = np.polyfit(righty, rightx, 2)
+    ploty = np.linspace(0, h-1, h)
+    left_fitx = left_fit[0] * ploty\**2 + left_fit[1] * ploty + left_fit[2]
+    right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2] 
+    
+![](images/sample_lane.png)  
+*Sample Lane without Sliding Window*  
+
+
+> Results of Lane Detection by skipping sliding window and using prior polynomial 
 
 ![](images/lane_images.png)<br>
 * Finding Lanes in Sample Images 

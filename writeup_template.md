@@ -278,65 +278,101 @@ out_img[righty, rightx] = [0, 0, 255]
 plt.plot(left_fitx, ploty, color='yellow')  
 plt.plot(right_fitx, ploty, color='yellow')  
 
-![](images/sliding_sample.png)<br>
-*Lane Detection using Sliding Window*
+![](images/sliding_sample.png)  
+*Lane Detection using Sliding Window*  
 
 > Skip the Sliding Window    
-Start with Polynomial Coefficients from the last image  
-left_fit = np.array([2.85842284e-04, -5.92619909e-01, 6.14734010e+02])  
+Start with Polynomial Coefficients from the last image    
+left_fit = np.array([2.85842284e-04, -5.92619909e-01, 6.14734010e+02])    
 right_fit = np.array([1.80581319e-04, -5.51462989e-01, 1.25626613e+03])  
 
-> Search the Activated around the current Poly
-margin = 50
+> Search the Activated around the current Poly  
+margin = 50  
 
-\# Grab Activate Pixels  
-nonzero = binary_warped.nonzero()  
+\# Grab Activate Pixels    
+nonzero = binary_warped.nonzero()    
 nonzeroy = np.array(nonzero[0])  
 nonzerox = np.array(nonzero[1])  
 
-xvals = left_fit[0] * nonzeroy**2 + left_fit[1] * nonzeroy + left_fit[2]  
-left_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)  
+xvals = left_fit[0] * nonzeroy**2 + left_fit[1] * nonzeroy + left_fit[2]    
+left_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)    
 
 xvals = right_fit[0] * nonzeroy**2 + right_fit[1] * nonzeroy + right_fit[2]  
-right_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)  
+right_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)    
 
 left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy\**2) + left_fit[1]*nonzeroy +left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + 
-                left_fit[1]*nonzeroy + left_fit[2] + margin)))
+                left_fit[1]*nonzeroy + left_fit[2] + margin)))  
                 
 right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy\**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + 
-                right_fit[1]*nonzeroy + right_fit[2] + margin)))
+                right_fit[1]*nonzeroy + right_fit[2] + margin)))  
 
 
-\# extract left and right line pixel positions
-leftx = nonzerox[left_lane_inds]
-lefty = nonzeroy[left_lane_inds]
+\# extract left and right line pixel positions  
+leftx = nonzerox[left_lane_inds]  
+lefty = nonzeroy[left_lane_inds]  
 
-rightx = nonzerox[right_lane_inds]
-righty = nonzeroy[right_lane_inds]
+rightx = nonzerox[right_lane_inds]  
+righty = nonzeroy[right_lane_inds]  
 
-\# Fit new polynomials 
-if len(leftx) != 0 and len(rightx) != 0:
-    left_fit = np.polyfit(lefty, leftx, 2)
-    right_fit = np.polyfit(righty, rightx, 2)
-    ploty = np.linspace(0, h-1, h)
-    left_fitx = left_fit[0] * ploty\**2 + left_fit[1] * ploty + left_fit[2]
-    right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2] 
+\# Fit new polynomials  
+if len(leftx) != 0 and len(rightx) != 0:  
+    left_fit = np.polyfit(lefty, leftx, 2)  
+    right_fit = np.polyfit(righty, rightx, 2)  
+    ploty = np.linspace(0, h-1, h)  
+    left_fitx = left_fit[0] * ploty\**2 + left_fit[1] * ploty + left_fit[2]  
+    right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]   
     
 ![](images/sample_lane.png)  
-*Sample Lane without Sliding Window*  
+*Sample Lane without Sliding Window*    
 
 
-> Results of Lane Detection by skipping sliding window and using prior polynomial 
+> Results of Lane Detection by skipping sliding window and using prior polynomial   
 
-![](images/lane_images.png)<br>
-* Finding Lanes in Sample Images 
+![](images/lane_images.png)  
+*Finding Lanes in Sample Images* 
 
 
 ## Measure Curvature
-![](images/sample_output_bird_eye.png)<br>
-*Sample output image with Curvature and Centre in Bird Eye View*
 
-![](images/sample_output.png)<br>
+> Define conversions in x and y from pixels space to meters  
+ym_per_pix = 30/720 # meters per pixel in y dimension  
+xm_per_pix = 3.7/700 # meters per pixel in x dimension  
+left_fitx = [lx * xm_per_pix for lx in left_fitx]  
+right_fitx = [rx * xm_per_pix for rx in right_fitx]  
+
+ploty = [py * ym_per_pix for py in ploty]  
+left_fit = np.polyfit(ploty, left_fitx, 2)  
+right_fit = np.polyfit(ploty, right_fitx, 2)  
+
+y_eval = np.max(ploty)  
+y_eval = y_eval * ym_per_pix  
+
+A, B, C = left_fit[0], left_fit[1], left_fit[2]  
+left_curverad = (((1 + (2 * A * y_eval + B)**2))**1.5) / np.absolute(2*A)    
+
+A, B, C = right_fit[0], right_fit[1], right_fit[2]  
+right_curverad = (((1 + (2 * A * y_eval + B)**2))**1.5) / np.absolute(2*A)  
+
+## Measure Centre  
+
+> Consider last 20 Points  
+left_fitx = left_fitx[-20:]  
+right_fitx = right_fitx[-20:]  
+ploty = ploty[-20:]  
+
+diff = [l + (r - l)/2 for r, l in zip(right_fitx, left_fitx)]  
+x = np.mean(diff)  
+y = np.mean(ploty)  
+cx, cy = int(x), int(y)  
+
+
+![](images/sample_output_bird_eye.png)  
+*Sample output image with Curvature and Centre in Bird Eye View*  
+
+---
+# Process Input
+
+![](images/sample_output.png)
 *Sample output image with Curvature and Centre in Camera View*
 
 

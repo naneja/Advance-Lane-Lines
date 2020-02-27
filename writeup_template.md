@@ -167,7 +167,122 @@ warped = cv2.warpPerspective(binary_img, M, image_size, flags=cv2.INTER_LINEAR)
 *Threshold Binary Warped Images by applying prespective transform M in Bird-Eye View*  
 
 ---
-## Detect lane pixels and fit to find the lane boundary
+## Detect lane pixels and fit to find the lane boundary  
+* The process of sliding window to detect the lane pixels is explained below:  
+
+> Find Left and Right Lane Pixels  
+
+> Start with Binary Warped Image and Prespective Transform M   
+Get binary_warped, M  
+
+> Create Histogram  
+h, w = binary_warped.shape[0], binary_warped.shape[1]  
+half_image = binary_warped[h//2:, :]  
+histogram = np.sum(half_image, axis=0)  
+
+> histogram peaks and left/right lanes  
+mid = histogram.shape[0] // 2  
+leftx_base = np.argmax(histogram[:mid])  
+rightx_base = np.argmax(histogram[mid:]) + mid  
+
+> Hyperparameters  
+nwindows = 15  
+margin = 150   
+minpix = 50  
+window_height = h // nwindows    
+
+> x and y positions of all nonzero pixels    
+nonzero = binary_warped.nonzero()  
+nonzeroy = np.array(nonzero[0])  
+nonzerox = np.array(nonzero[1])  
+
+\# Current Positions to be updated  
+leftx_current = leftx_base  
+rightx_current = rightx_base  
+ 
+\# left and right lane pixel indices  
+left_lane_inds = []  
+right_lane_inds = []  
+ 
+for window in range(nwindows):  
+    \# Identify window boundaries in x and y  
+    
+    win_y_high = h - window * window_height  
+    win_y_low = h - (window + 1) * window_height  
+     
+    win_xleft_low = leftx_current - margin  
+    win_xleft_high = leftx_current + margin  
+     
+    win_xright_low = rightx_current - margin  
+    win_xright_high = rightx_current + margin  
+
+     # Draw the windows on the visualization image  
+     pt1 = (win_xleft_low, win_y_low)  
+     pt2 = (win_xleft_high, win_y_high)  
+     color = (0, 255, 0)  
+     thickness = 2  
+     cv2.rectangle(out_img, pt1, pt2, color, thickness)  
+     
+     pt1 = (win_xright_low, win_y_low)  
+     pt2 = (win_xright_high, win_y_high)  
+     cv2.rectangle(out_img, pt1, pt2, color, thickness)  
+
+     
+     # Identify the nonzero pixels in x and y within the window  
+     left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high))  
+     good_left_inds = left_inds.nonzero()[0]  
+
+     right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high))  
+     good_right_inds = right_inds.nonzero()[0]  
+             
+     # Append these indices to the lists  
+     left_lane_inds.append(good_left_inds)  
+     right_lane_inds.append(good_right_inds)  
+
+     # If found > minpix pixels, recenter next window on their mean position  
+     if len(good_left_inds) > minpix:  
+         inds = nonzerox[good_left_inds]  
+         leftx_current = np.int(np.mean(inds))  
+         
+     if len(good_right_inds) > minpix:  
+         inds = nonzerox[good_right_inds]  
+         rightx_current = np.int(np.mean(inds))  
+    
+     # Concatenate the arrays of indices (previously was a list of lists of pixels)  
+
+left_lane_inds = np.concatenate(left_lane_inds)  
+right_lane_inds = np.concatenate(right_lane_inds)  
+
+\# Extract left and right line pixel positions  
+leftx = nonzerox[left_lane_inds]  
+lefty = nonzeroy[left_lane_inds]  
+rightx = nonzerox[right_lane_inds]  
+righty = nonzeroy[right_lane_inds]  
+
+
+> Fit Polynomial for detected left and right lane points  
+\# Fit a second order polynomial to each using `np.polyfit`  
+left_fit = np.polyfit(lefty, leftx, 2)  
+right_fit = np.polyfit(righty, rightx, 2)  
+
+> Generate x and y values for plotting  
+ploty = np.linspace(0, h-1, h)  
+left_fitx = left_fit[0] * ploty\**2 + left_fit[1] * ploty + left_fit[2]  
+right_fitx = right_fit[0] * ploty\**2 + right_fit[1] * ploty + right_fit[2]  
+
+\# out image  
+out_img = np.dstack((binary_warped, binary_warped, binary_warped)) * 255   
+
+\# Colors in the left and right lane regions  
+out_img[lefty, leftx] = [255, 0, 0]  
+out_img[righty, rightx] = [0, 0, 255]  
+
+\# Plots the left and right polynomials on the lane lines  
+plt.plot(left_fitx, ploty, color='yellow')  
+plt.plot(right_fitx, ploty, color='yellow')  
+
+
+
 ![](images/sliding_sample.png)<br>
 *Lane Detection using Sliding Window*
 

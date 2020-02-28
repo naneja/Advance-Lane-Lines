@@ -360,16 +360,32 @@ cx, cy = int(x), int(y)
 *Sample output image with Curvature and Centre in Bird Eye View*  
 
 ---
-# Process Input
+# Process Input  
+> Complete Pipeline for processing image in Video  
+\# Get Binary Thresholded Image and M with bird-eye view  
+binary_warped, M = birds_eye(image)  
+\# Create Inverse Transform  
+Minv = np.linalg.inv(M)  
+w, h = image.shape[1], image.shape[0]  
+\# Get for left and right polynomial points  
+out_image, left_fitx, right_fitx, ploty = search_around_poly(binary_warped, disp_fit=False)  
+\# Change Prespective and add to the original image  
+out_image = cv2.warpPerspective(out_image, Minv, (w, h))  
+result = cv2.addWeighted(image, 1, out_image, 0.3, 0)  
+\# Get Curvature and Center if Lane Found i.e. there are points in polynomial   
+left_curverad, right_curverad = measure_curvature_real(left_fitx, right_fitx, ploty)  
+cx, cy = get_centre(left_fitx, right_fitx, ploty)  
 
-![](images/sample_output.png)
-*Sample output image with Curvature and Centre in Camera View*
+![](images/sample_output.png)  
+*Sample output image with Curvature and Centre in Camera View*  
 
+> Process Video  
+clip_marked = clip.fl_image(lambda image: process_image(image))  
 
-# Input and Final Output
+# Input and Final Output  
 
-Input: [Project Video](data/project_video.mp4)
+Input: [Project Video](data/project_video.mp4)  
 
-Output: [Project Video Marked](data/project_video_marked.mp4)
+Output: [Project Video Marked](data/project_video_marked.mp4)  
 
 

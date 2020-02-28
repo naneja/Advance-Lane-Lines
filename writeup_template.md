@@ -20,7 +20,7 @@ Camera introduces two types of distortation:
     * tangential distortion: p1 and p2
     
 In order to calibrate camera, following 20 images were used.
-![](images/calibration.png)<br>
+![](output_images/calibration.png)<br>
 *Calibration Images for Object Points for 9 inside corners on x-axis and 6 inside corners on y-axis with z-value zero *
 
 Following process explains Calibration Steps
@@ -45,7 +45,7 @@ ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_s
 >  Test undistortion on an image  
 undist = cv2.undistort(image, mtx, dist, None, mtx)  
 
-![](images/undistort_sample.png)  
+![](output_images/undistort_sample.png)  
 *Sample Undistorted Image*
 
 
@@ -71,7 +71,7 @@ M = cv2.getPerspectiveTransform(src, dst)
 warped = cv2.warpPerspective(undist, M, image_size)  
 
 
-![](images/undistort_warp_sample.png)  
+![](output_images/undistort_warp_sample.png)  
 *Sample Undistorted and Warped Image*  
 
 ---
@@ -83,7 +83,7 @@ mtx = dist_pickle['mtx']
 dist = dist_pickle['dist']  
 image = cv2.undistort(image, mtx, dist, None, mtx) # Undistort  Images  
 
-![](images/undistort_images.png)  
+![](output_images/undistort_images.png)  
 *Images Undistorted*  
 
 
@@ -126,7 +126,7 @@ opt = opt1 | opt2 | opt3
 combined_binary[opt] = 1   
 
 
-![](images/threshold_binary_images.png)  
+![](output_images/threshold_binary_images.png)  
 *Threshold Binary Images*  
 
 
@@ -147,7 +147,7 @@ bottom_right = [1210, h]
 bottom_left = [200, h]  
 src = np.float32([top_left, top_right, bottom_right, bottom_left])  
 
-![](images/sample_corners.png)  
+![](output_images/sample_corners.png)  
 *Object Points Marked on Sample Image with Red Star for Bird-Eye View*  
 
 
@@ -163,7 +163,7 @@ dst = np.float32([top_left, top_right, bottom_right, bottom_left])
 M = cv2.getPerspectiveTransform(src, dst)  
 warped = cv2.warpPerspective(binary_img, M, image_size, flags=cv2.INTER_LINEAR)  
 
-![](images/bird_eye_images.png)  
+![](output_images/bird_eye_images.png)  
 *Threshold Binary Warped Images by applying prespective transform M in Bird-Eye View*  
 
 ---
@@ -278,7 +278,7 @@ out_img[righty, rightx] = [0, 0, 255]
 plt.plot(left_fitx, ploty, color='yellow')  
 plt.plot(right_fitx, ploty, color='yellow')  
 
-![](images/sliding_sample.png)  
+![](output_images/sliding_sample.png)  
 *Lane Detection using Sliding Window*  
 
 > Skip the Sliding Window    
@@ -317,13 +317,13 @@ if len(leftx) != 0 and len(rightx) != 0:
     left_fitx = left_fit[0] * ploty\**2 + left_fit[1] * ploty + left_fit[2]  
     right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]   
     
-![](images/sample_lane.png)  
+![](output_images/sample_lane.png)  
 *Sample Lane without Sliding Window*    
 
 
 > Results of Lane Detection by skipping sliding window and using prior polynomial   
 
-![](images/lane_images.png)  
+![](output_images/lane_images.png)  
 *Finding Lanes in Sample Images* 
 
 
@@ -356,7 +356,7 @@ y = np.mean(ploty)
 cx, cy = int(x), int(y)  
 
 
-![](images/sample_output_bird_eye.png)  
+![](output_images/sample_output_bird_eye.png)  
 *Sample output image with Curvature and Centre in Bird Eye View*  
 
 ---
@@ -376,7 +376,7 @@ result = cv2.addWeighted(image, 1, out_image, 0.3, 0)
 left_curverad, right_curverad = measure_curvature_real(left_fitx, right_fitx, ploty)  
 cx, cy = get_centre(left_fitx, right_fitx, ploty)  
 
-![](images/sample_output.png)  
+![](output_images/sample_output.png)  
 *Sample output image with Curvature and Centre in Camera View*  
 
 > Process Video  

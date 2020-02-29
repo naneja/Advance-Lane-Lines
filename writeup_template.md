@@ -1,4 +1,6 @@
 # Advance Lane Lines
+[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+
 > Steps
 * Compute the camera calibration matrix and distortion coefficients given a set of chessboard images
 * Apply a distortion correction to raw images
@@ -388,4 +390,7 @@ Input: [Project Video](data/project_video.mp4)
 
 Output: [Project Video Marked](data/project_video_marked.mp4)  
 
+
+# Discussion
+I tried most of the code and parametrs from the lessons and found reasonalbly good results with minor modifications. However, the code need improvement in writing functions to further simplify to remove redundant code. In some frames, lane pixels have not been deducted and in some cases are not correct that can be improved.
 

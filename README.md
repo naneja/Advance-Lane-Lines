@@ -394,12 +394,12 @@ Output: [Project Video Marked](data/project_video_marked.mp4)
 # Discussion
 I tried most of the code and parametrs from the lessons and found reasonalbly good results. However, to determine threshold values, I tried different values and found that R Channel gives best results, as visible in the below image. 
 
-![](output_images/threshold_binary_images.png)  
-*Threshold Binary Images*  
+![](output_images/threshold_binary_images_params.png)    
+*Threshold Binary Images*   
 
-I tried only R channel in the pipeline and results were good, however found many images in the video for which no lane was detected as below
+I also tried only R channel in the pipeline and results were still good, however found many images in the video for which no lane was detected as below
 
-![](output_images/special.png)  
+![](output_images/special.png)   
 *Threshold Binary Images*  
 
 The code need improvement as in some frames, lane pixels have not been deducted and in some cases are not correct that can be improved.

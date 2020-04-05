@@ -10,7 +10,7 @@
 * Measure Curvature
 
 ---
-## Compute the camera calibration matrix and distortion coefficients given a set of chessboard images
+## Camera Calibration
 Camera introduces two types of distortation:
 * Radial Distortion
     * Real cameras use curved lenses to form an image, and light rays often bend a little too much or too little at the edges of these lenses. This creates an effect that distorts the edges of images, so that lines or objects appear more or less curved than they actually are. This is called radial distortion, and it’s the most common type of distortion.
@@ -21,10 +21,6 @@ Camera introduces two types of distortation:
     * radial distortion: k1, k2, and k3
     * tangential distortion: p1 and p2
     
-In order to calibrate camera, following 20 images were used.
-![](output_images/calibration.png)<br>
-*Calibration Images for Object Points for 9 inside corners on x-axis and 6 inside corners on y-axis with z-value zero *
-
 Following process explains Calibration Steps
 
 > Get Object Points  
@@ -40,6 +36,11 @@ ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
 imgpoints.append(corners)  
 objpoints.append(objp)  
 
+![](data/output_images/images_calibrated.jpg)<br>
+*Calibrated Images*
+
+---
+## Undistort Images
 > Calibrate to calculate distortion coefficients  
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_size, None, None)  
 *save mtx and dist to be used later for all images  
@@ -47,287 +48,111 @@ ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_s
 >  Test undistortion on an image  
 undist = cv2.undistort(image, mtx, dist, None, mtx)  
 
-![](output_images/undistort_sample.png)  
-*Sample Undistorted Image*
+![](data/output_images/calibration_images_undistorted.jpg)<br>
+*Calibrated Undistorted Images*
 
 
+---
+## Test Images
+
+![](data/output_images/images_test_original.jpg)<br>
+*Test Images*
+
+
+---
+## Test Images - Undistorted
+
+![](data/output_images/test_images_undistorted.jpg)<br>
+*Test Images Undistorted*
+
+
+---
+## Craete Perspective Transform - Warp Image
 > Transform Perspective  
-gray = cv2.cvtColor(undist, cv2.COLOR_BGR2GRAY)  
-ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)  
+img_size = w, h = img.shape[1], img.shape[0] 
 
-> Get Source Points from Corners  
-top_left, top_right = corners[0], corners[nx-1]  
-bottom_right, bottom_left = corners[-1], corners[-nx]  
-src = np.float32([top_left, top_right, bottom_right, bottom_left])  
+#w, h = 1280, 720
+src= [[270, 674], [530, 494], [726, 494], [1044, 672]]
+dst = [[300, h], [300, 0], [w-300, 0], [w-300, h]]
 
-> Get Destination Points from Image with offset e.g. 300  
-top_left, top_right = [offset, offset], [image_size[0] - offset, offset]    
-bottom_right = [image_size[0] - offset, image_size[1] - offset]    
-bottom_left = [offset, image_size[1] - offset]  
-dst = np.float32([top_left, top_right, bottom_right, bottom_left])  
-
-> Perspective transform matrix  
+src = np.float32(src)
+dst = np.float32(dst)
+    
 M = cv2.getPerspectiveTransform(src, dst)
+Minv = cv2.getPerspectiveTransform(dst, src)  
 
-> Get Warped Image  
-warped = cv2.warpPerspective(undist, M, image_size)  
-
-
-![](output_images/undistort_warp_sample.png)  
-*Sample Undistorted and Warped Image*  
+warped = cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_LINEAR)  
+unperspective = cv2.warpPerspective(warped, Minv, img_size, flags=cv2.INTER_LINEAR)
 
 ---
-## Apply a distortion correction to raw images
+## Create Binary Threshold Image
+image = undistort(image)
+image = gaussian_blur(image, ksize=5)
 
-> Process to Undistort Images  
-dist_pickle = pickle.load(open(dist_fname, 'rb'))  # Load Calibration Params    
-mtx = dist_pickle['mtx']  
-dist = dist_pickle['dist']  
-image = cv2.undistort(image, mtx, dist, None, mtx) # Undistort  Images  
+*Threshold Gradient*
+binary_x = threshold_x(image, ksize=3, thresh=(20, 100))
+binary_mag = threshold_mag(image, ksize=3, thresh=(40, 100))
+binary_dir = threshold_dir(image, ksize=15, thresh=(0.7, 1.3)) 
 
-![](output_images/undistort_images.png)  
-*Images Undistorted*  
+*Threshold HLS*
+binary_hls_s = threshold_hls(image, thresh=(80, 255))
 
+*Combine two binary thresholds*
+q = (binary_x==1) | (binary_hls_s==1)
+binary_combined_1 = np.zeros_like(binary_x)
+binary_combined_1[q] = 1
 
----
-## Use color transforms, gradients, etc., to create a thresholded binary image.
-* Process steps to create thresholded binary images are below
-
-> Undistort Image  
-image = cv2.undistort(image, mtx, dist, None, mtx)   
-
-> Threshold R color channel to get R Binary with (200, 255)  
-R = image[:,:,0]  
-R_binary = np.zeros_like(R)  
-R_binary[(R >= R_thresh[0]) & (R <= R_thresh[1])] = 1  
-
-> Threshold color channel with (170, 255) to get s_binary  
-hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)  
-s_channel = hls[:, :, 2]  
-s_binary = np.zeros_like(s_channel)  
-s_binary[(s_channel >= s_thresh[0]) & (s_channel <= s_thresh[1])] = 1  
-
-> Threshold x gradient with (20, 100) to get sx_binary  
-l_channel = hls[:, :, 1]  
-\# Apply Sobel x  
-sobelx = cv2.Sobel(l_channel, cv2.CV_64F, 1, 0)  
-sobelx_abs = np.absolute(sobelx)  
-scale_factor = np.max(sobelx_abs) / 255  
-scaled_sobel = np.uint8(sobelx_abs/scale_factor)  
-\# Threshold x gradient  
-sx_binary = np.zeros_like(scaled_sobel)  
-sx_binary[(scaled_sobel >= sx_thresh[0]) & (scaled_sobel <= sx_thresh[1])] = 1   
+![](data/output_images/sample_image_thresholded.jpg)  
+*Sample Threshold Binary Image*
 
 
-> Activate binary image when any two activated from R_binary, s_binary, or sx_binary  
-combined_binary = np.zeros_like(sx_binary)  
-opt1 = (s_binary == 1) & (sx_binary == 1)  
-opt2 = (sx_binary == 1) & (R_binary == 1)    
-opt3 = (s_binary == 1) & (R_binary == 1)  
-opt = opt1 | opt2 | opt3  
-combined_binary[opt] = 1   
+![](data/output_images/sample_image_thresholded_warped.jpg)  
+*Sample Threshold and Warped Binary Image*
 
 
-![](output_images/threshold_binary_images.png)  
-*Threshold Binary Images*  
-
-
-
-
-## Apply a perspective transform to rectify binary image ("birds-eye view").  
-* Process to rectify the binary image to get birds-eye view is below:  
-
-> Get Binary Thresholded Image  
-combined_binary[opt] = 1 # continue from previous step  
-w, h = binary_img.shape[1], binary_img.shape[0]  
-image_size = (w, h)  
-
-> get source points - grabbing ROI as marked in the below image  
-top_left = [595, 450]  
-top_right = [685, 450]  
-bottom_right = [1210, h]  
-bottom_left = [200, h]  
-src = np.float32([top_left, top_right, bottom_right, bottom_left])  
-
-![](output_images/sample_corners.png)  
-*Object Points Marked on Sample Image with Red Star for Bird-Eye View*  
-
-
-> get destination points  
-offset = 300  
-top_left = [offset, 0]  
-top_right = [w - offset, 0]  
-bottom_right = [w - offset, h]  
-bottom_left = [offset, h]  
-dst = np.float32([top_left, top_right, bottom_right, bottom_left])  
-
-> get perspective transform matrix and warped image as shown below  
-M = cv2.getPerspectiveTransform(src, dst)  
-warped = cv2.warpPerspective(binary_img, M, image_size, flags=cv2.INTER_LINEAR)  
-
-![](output_images/bird_eye_images.png)  
-*Threshold Binary Warped Images by applying prespective transform M in Bird-Eye View*  
+![](data/output_images/test_images_thresholded_warped.jpg)  
+*Test Images Threshold and Warped*
 
 ---
 ## Detect lane pixels and fit to find the lane boundary  
 * The process of sliding window to detect the lane pixels is explained below:  
 
-> Find Left and Right Lane Pixels  
+*Histogram of the bottom half of the image*
+h, w = image.shape[0], image.shape[1]    
+half_image = image[h//2:, :]
+histogram = np.sum(half_image, axis=0)
 
-> Start with Binary Warped Image and Prespective Transform M   
-Get binary_warped, M  
+*Output image to draw on and  visualize the result*
+out_img = np.dstack((image, image, image)) * 255 
 
-> Create Histogram  
-h, w = binary_warped.shape[0], binary_warped.shape[1]  
-half_image = binary_warped[h//2:, :]  
-histogram = np.sum(half_image, axis=0)  
+*histogram peaks and left/right lanes*
+mid = histogram.shape[0] // 2 
+leftx_base = np.argmax(histogram[150:mid]) + 150 # No need to start search from 0
+rightx_base = np.argmax(histogram[mid+200:-100]) + mid+200 #  # No need to go beyond 
 
-> histogram peaks and left/right lanes  
-mid = histogram.shape[0] // 2  
-leftx_base = np.argmax(histogram[:mid])  
-rightx_base = np.argmax(histogram[mid:]) + mid  
-
-> Hyperparameters  
-nwindows = 15  
-margin = 150   
+*Hyperparameters*
+nwindows = 9 
+margin = 50 
 minpix = 50  
-window_height = h // nwindows    
-
-> x and y positions of all nonzero pixels    
-nonzero = binary_warped.nonzero()  
-nonzeroy = np.array(nonzero[0])  
-nonzerox = np.array(nonzero[1])  
-
-> Current Positions to be updated  
-leftx_current = leftx_base  
-rightx_current = rightx_base  
- 
-> left and right lane pixel indices  
-left_lane_inds = []  
-right_lane_inds = []  
- 
-for window in range(nwindows):  
-    \# Identify window boundaries in x and y  
-    
-    win_y_high = h - window * window_height  
-    win_y_low = h - (window + 1) * window_height  
-     
-    win_xleft_low = leftx_current - margin  
-    win_xleft_high = leftx_current + margin  
-     
-    win_xright_low = rightx_current - margin  
-    win_xright_high = rightx_current + margin  
-
-    # Draw the windows on the visualization image  
-     pt1 = (win_xleft_low, win_y_low)  
-     pt2 = (win_xleft_high, win_y_high)  
-     color = (0, 255, 0)  
-     thickness = 2  
-     cv2.rectangle(out_img, pt1, pt2, color, thickness)  
-     
-     pt1 = (win_xright_low, win_y_low)  
-     pt2 = (win_xright_high, win_y_high)  
-     cv2.rectangle(out_img, pt1, pt2, color, thickness)  
-
-     # Identify the nonzero pixels in x and y within the window  
-     left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high))  
-     good_left_inds = left_inds.nonzero()[0]  
-
-     right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high))  
-     good_right_inds = right_inds.nonzero()[0]  
-             
-     # Append these indices to the lists  
-     left_lane_inds.append(good_left_inds)  
-     right_lane_inds.append(good_right_inds)  
-
-     # If found > minpix pixels, recenter next window on their mean position  
-     if len(good_left_inds) > minpix:  
-         inds = nonzerox[good_left_inds]  
-         leftx_current = np.int(np.mean(inds))  
-         
-     if len(good_right_inds) > minpix:  
-         inds = nonzerox[good_right_inds]  
-         rightx_current = np.int(np.mean(inds))  
-    
-\# Concatenate the arrays of indices (previously was a list of lists of pixels)  
-left_lane_inds = np.concatenate(left_lane_inds)  
-right_lane_inds = np.concatenate(right_lane_inds)  
-
-\# Extract left and right line pixel positions  
-leftx = nonzerox[left_lane_inds]  
-lefty = nonzeroy[left_lane_inds]  
-rightx = nonzerox[right_lane_inds]  
-righty = nonzeroy[right_lane_inds]  
-
-> Fit Polynomial for detected left and right lane points  
-\# Fit a second order polynomial to each using `np.polyfit`  
-left_fit = np.polyfit(lefty, leftx, 2)  
-right_fit = np.polyfit(righty, rightx, 2)  
-
-> Generate x and y values for plotting  
-ploty = np.linspace(0, h-1, h)  
-left_fitx = left_fit[0] * ploty\**2 + left_fit[1] * ploty + left_fit[2]  
-right_fitx = right_fit[0] * ploty\**2 + right_fit[1] * ploty + right_fit[2]  
-
-\# out image  
-out_img = np.dstack((binary_warped, binary_warped, binary_warped)) * 255   
-
-\# Colors in the left and right lane regions  
-out_img[lefty, leftx] = [255, 0, 0]  
-out_img[righty, rightx] = [0, 0, 255]  
-
-\# Plots the left and right polynomials on the lane lines  
-plt.plot(left_fitx, ploty, color='yellow')  
-plt.plot(right_fitx, ploty, color='yellow')  
-
-![](output_images/sliding_sample.png)  
-*Lane Detection using Sliding Window*  
-
-> Skip the Sliding Window    
-Start with Polynomial Coefficients from the last image    
-left_fit = np.array([2.85842284e-04, -5.92619909e-01, 6.14734010e+02])    
-right_fit = np.array([1.80581319e-04, -5.51462989e-01, 1.25626613e+03])  
-
-> Search the Activated around the current Poly  
-margin = 50  
-
-> Grab Activate Pixels    
-nonzero = binary_warped.nonzero()    
-nonzeroy = np.array(nonzero[0])  
-nonzerox = np.array(nonzero[1])  
-xvals = left_fit[0] * nonzeroy\**2 + left_fit[1] * nonzeroy + left_fit[2]    
-left_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)    
-xvals = right_fit[0] * nonzeroy**2 + right_fit[1] * nonzeroy + right_fit[2]  
-right_lane_inds = (nonzerox > xvals - margin) & (nonzerox < xvals + margin)    
-left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy\**2) + left_fit[1]*nonzeroy +left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy\**2) + 
-                left_fit[1]*nonzeroy + left_fit[2] + margin)))  
-right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy\**2) + right_fit[1]*nonzeroy + right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy\**2) + 
-                right_fit[1]*nonzeroy + right_fit[2] + margin)))  
+window_height = h // nwindows
 
 
-> extract left and right line pixel positions  
-leftx = nonzerox[left_lane_inds]  
-lefty = nonzeroy[left_lane_inds]  
-rightx = nonzerox[right_lane_inds]  
-righty = nonzeroy[right_lane_inds]  
-
-> Fit new polynomials  
-if len(leftx) != 0 and len(rightx) != 0:  
-    left_fit = np.polyfit(lefty, leftx, 2)  
-    right_fit = np.polyfit(righty, rightx, 2)  
-    ploty = np.linspace(0, h-1, h)  
-    left_fitx = left_fit[0] * ploty\**2 + left_fit[1] * ploty + left_fit[2]  
-    right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]   
-    
-![](output_images/sample_lane.png)  
-*Sample Lane without Sliding Window*    
+![](data/output_images/sample_image_lane_sliding.jpg)  
+*Sample Image with Lane Finding*
 
 
-> Results of Lane Detection by skipping sliding window and using prior polynomial   
+![](data/output_images/test_images_lane_sliding.jpg)  
+*Test Images with Lane Finding*
 
-![](output_images/lane_images.png)  
-*Finding Lanes in Sample Images* 
+---
+## Skip the sliding windows
 
+![](data/output_images/sample_image_lane_skip_sliding.jpg)  
+*Sample Test Image with Lane Finding*
+
+
+![](data/output_images/test_images_lane_skip_sliding.jpg)  
+*Test Images with Lane Finding*
 
 ## Measure Curvature
 
@@ -358,54 +183,40 @@ y = np.mean(ploty)
 cx, cy = int(x), int(y)  
 
 
-![](output_images/sample_output_bird_eye.png)  
-*Sample output image with Curvature and Centre in Bird Eye View*  
+![](data/output_images/test_images_lane_skip_sliding_cc.jpg)  
+*Test Images with Lane Finding and Centre and Curvature*  
 
 ---
 # Process Input  
 > Complete Pipeline for processing image in Video  
-\# Get Binary Thresholded Image and M with bird-eye view  
-binary_warped, M = birds_eye(image)  
-\# Create Inverse Transform  
-Minv = np.linalg.inv(M)  
-w, h = image.shape[1], image.shape[0]  
-\# Get for left and right polynomial points  
-out_image, left_fitx, right_fitx, ploty = search_around_poly(binary_warped, disp_fit=False)  
-\# Change Prespective and add to the original image  
-out_image = cv2.warpPerspective(out_image, Minv, (w, h))  
-result = cv2.addWeighted(image, 1, out_image, 0.3, 0)  
-\# Get Curvature and Center if Lane Found i.e. there are points in polynomial   
-left_curverad, right_curverad = measure_curvature_real(left_fitx, right_fitx, ploty)  
-cx, cy = get_centre(left_fitx, right_fitx, ploty)  
 
-![](output_images/sample_output.png)  
-*Sample output image with Curvature and Centre in Camera View*  
+![](data/output_images/sample_image_output.png)  
+*Sample Test Image Output with Lane Finding and Centre and Curvature*  
 
-> Process Video  
-clip_marked = clip.fl_image(lambda image: process_image(image))  
 
+![](data/output_images/test_images_output.png)  
+*Test Images Output with Lane Finding and Centre and Curvature*  
+
+---
 # Input and Final Output  
 
 Input: [Project Video](data/project_video.mp4)  
 
-Output: [Project Video Marked](data/project_video_marked.mp4)  
+Output: [Project Video Marked](data/output_images/project_video_marked.mp4)  
 
-
+---
 # Discussion
-I tried most of the code and parametrs from the lessons and found reasonalbly good results. However, to determine threshold values, I tried different values and found that R Channel gives best results, as visible in the below image. 
+Setting up of correct Craete Perspective Transform to create Warp Image was the most challenging due to the fact that even small mistake has large impact. The first criteria is to select image points from an image that has straight lanes and avoid image that have curved lanes. After selecting source points from the image, we need to choose the right destination points. Since our selected points form trapezoidal, we need to convert these points such that these form rectangle. I used 300 as offset from the boundaries for the destination points uisng below source and destination:
 
-![](output_images/threshold_binary_images_params.png)    
-*Threshold Binary Images*   
-
-I also tried only R channel in the pipeline and results were still good, however found many images in the video for which no lane was detected as below
-
-![](output_images/special.png)   
-*Threshold Binary Images*  
-
-The code need improvement as in some frames, lane pixels have not been deducted and in some cases are not correct that can be improved.
+w, h = 1280, 720
+src= [[270, 674], [530, 494], [726, 494], [1044, 672]]
+dst = [[300, h], [300, 0], [w-300, 0], [w-300, h]]
 
 
+The second most challenging point was to identify peak of histogram. Since histogram may show few peaks for non-lane boundaries, so instead of starting search from beginning, it is better to search from x-value 150 to mid point for left lane and midpoint+200 to until -100 from end for right pixels. This ensured that lanes will not be searched extreme left and right lane sometimes.
 
+The third challenging point is threshold image, combining threshold such that lane is detected either from sobel_x or HLS_S works best.
 
+The final learning is to use global variable in processing image in order to save the last frame left and right points so that the same points can be used when the lanes are not detected in the next frame.
 
-
+This can further be improved by adding more restrictions based on lane propoerties. In case lane not detected according to defined properties, the lane points from the previous frames can be used untill few frames.
